@@ -1,2 +1,2 @@
-django
-psycopg[binary]
+django==6.1
+psycopg[binary]==3.3.4
