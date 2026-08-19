@@ -1,18 +1,33 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.config import settings
+from app.config import get_settings
 
-engine = create_engine(settings.database_url)
+_engine = None
+_SessionLocal = None
 
-SessionLocal = sessionmaker(
-    bind=engine,
-    autoflush=False,
-    autocommit=False,
-)
+
+def get_engine():
+    global _engine
+    if _engine is None:
+        settings = get_settings()
+        _engine = create_engine(settings.database_url)
+    return _engine
+
+
+def get_session_local():
+    global _SessionLocal
+    if _SessionLocal is None:
+        _SessionLocal = sessionmaker(
+            bind=get_engine(),
+            autoflush=False,
+            autocommit=False,
+        )
+    return _SessionLocal
 
 
 def get_db():
+    SessionLocal = get_session_local()
     db = SessionLocal()
     try:
         yield db
