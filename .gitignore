@@ -25,8 +25,11 @@ env/
 .DS_Store
 Thumbs.db
 
-# Tests
+# Databases
+*.sqlite3
 test.db
+
+# Tests
 .pytest_cache/
 .coverage
 htmlcov/
