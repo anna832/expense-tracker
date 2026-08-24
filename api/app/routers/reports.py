@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.db import get_db
 from app.models import Category, Expense, User
+from app.schemas import ByCategoriesReportResponse, CategoryTotal, MonthlyReportResponse
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
@@ -25,7 +26,7 @@ def get_month_range(year: int, month: int) -> tuple[date, date]:
     return first_day, last_day
 
 
-@router.get("/monthly/")
+@router.get("/monthly/", response_model=MonthlyReportResponse)
 def monthly_report(
     db: DbSession,
     current_user: CurrentUser,
@@ -44,14 +45,14 @@ def monthly_report(
         )
     ).scalar_one()
 
-    return {
-        "year": year,
-        "month": month,
-        "total_cents": total_cents,
-    }
+    return MonthlyReportResponse(
+        year=year,
+        month=month,
+        total_cents=total_cents,
+    )
 
 
-@router.get("/by-categories/")
+@router.get("/by-categories/", response_model=ByCategoriesReportResponse)
 def by_categories_report(
     db: DbSession,
     current_user: CurrentUser,
@@ -78,8 +79,8 @@ def by_categories_report(
         .order_by(func.coalesce(func.sum(Expense.amount_cents), 0).desc())
     ).all()
 
-    return {
-        "year": year,
-        "month": month,
-        "categories": [{"name": name, "total_cents": total} for name, total in rows],
-    }
+    return ByCategoriesReportResponse(
+        year=year,
+        month=month,
+        categories=[CategoryTotal(name=name, total_cents=total) for name, total in rows],
+    )

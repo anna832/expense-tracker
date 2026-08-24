@@ -57,3 +57,20 @@ class UserRead(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class MonthlyReportResponse(BaseModel):
+    year: int
+    month: int
+    total_cents: int
+
+
+class CategoryTotal(BaseModel):
+    name: str
+    total_cents: int
+
+
+class ByCategoriesReportResponse(BaseModel):
+    year: int
+    month: int
+    categories: list[CategoryTotal]

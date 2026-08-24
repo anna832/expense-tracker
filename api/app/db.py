@@ -15,7 +15,10 @@ def get_engine():
     global _engine
     if _engine is None:
         settings = get_settings()
-        _engine = create_engine(settings.database_url)
+        _engine = create_engine(
+            settings.database_url,
+            pool_pre_ping=True,
+        )
     return _engine
 
 
