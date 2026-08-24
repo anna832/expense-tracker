@@ -36,3 +36,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Linters
+.ruff_cache/

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,90 +10,61 @@ from app.schemas import ExpenseCreate, ExpenseRead, ExpenseUpdate
 
 router = APIRouter(prefix="/api/v1/expenses", tags=["expenses"])
 
-
-def get_expense_or_404(expense_id: int, db: Session) -> Expense:
-    expense: Expense | None = db.get(Expense, expense_id)
-
-    if expense is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense not found",
-        )
-
-    return expense
+DbSession = Annotated[Session, Depends(get_db)]
 
 
-def check_category_exists(category_id: int, db: Session) -> None:
-    category = db.get(Category, category_id)
-
+@router.post("/", response_model=ExpenseRead, status_code=201)
+def create_expense(data: ExpenseCreate, db: DbSession):
+    category = db.get(Category, data.category_id)
     if category is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Category does not exist",
-        )
-
-
-@router.post("/", response_model=ExpenseRead, status_code=status.HTTP_201_CREATED)
-def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db)):
-    check_category_exists(payload.category_id, db)
+        raise HTTPException(status_code=400, detail="Category not found")
 
     expense = Expense(
-        category_id=payload.category_id,
-        amount_cents=payload.amount_cents,
-        spent_at=payload.spent_at,
-        comment=payload.comment,
+        category_id=data.category_id,
+        amount_cents=data.amount_cents,
+        spent_at=data.spent_at,
+        comment=data.comment,
     )
-
     db.add(expense)
     db.commit()
     db.refresh(expense)
-
     return expense
 
 
 @router.get("/", response_model=list[ExpenseRead])
-def list_expenses(db: Session = Depends(get_db)):
-    expenses = db.execute(
-        select(Expense).order_by(Expense.spent_at.desc(), Expense.id.desc())
-    ).scalars().all()
+def list_expenses(db: DbSession):
+    expenses = db.execute(select(Expense).order_by(Expense.spent_at.desc())).scalars().all()
     return expenses
 
 
 @router.get("/{expense_id}/", response_model=ExpenseRead)
-def get_expense(expense_id: int, db: Session = Depends(get_db)):
-    return get_expense_or_404(expense_id, db)
-
-
-@router.patch("/{expense_id}/", response_model=ExpenseRead)
-def update_expense(
-    expense_id: int,
-    payload: ExpenseUpdate,
-    db: Session = Depends(get_db),
-):
-    expense = get_expense_or_404(expense_id, db)
-
-    if payload.category_id is not None:
-        check_category_exists(payload.category_id, db)
-        expense.category_id = payload.category_id
-
-    if payload.amount_cents is not None:
-        expense.amount_cents = payload.amount_cents
-
-    if payload.spent_at is not None:
-        expense.spent_at = payload.spent_at
-
-    if payload.comment is not None:
-        expense.comment = payload.comment
-
-    db.commit()
-    db.refresh(expense)
-
+def get_expense(expense_id: int, db: DbSession):
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise HTTPException(status_code=404, detail="Expense not found")
     return expense
 
 
-@router.delete("/{expense_id}/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
-    expense = get_expense_or_404(expense_id, db)
+@router.patch("/{expense_id}/", response_model=ExpenseRead)
+def update_expense(expense_id: int, data: ExpenseUpdate, db: DbSession):
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(expense, key, value)
+
+    db.commit()
+    db.refresh(expense)
+    return expense
+
+
+@router.delete("/{expense_id}/", status_code=204)
+def delete_expense(expense_id: int, db: DbSession):
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise HTTPException(status_code=404, detail="Expense not found")
 
     db.delete(expense)
     db.commit()

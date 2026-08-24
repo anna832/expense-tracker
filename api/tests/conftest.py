@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from testcontainers.postgres import PostgresContainer  # noqa
+from testcontainers.postgres import PostgresContainer
 
 from app.db import get_db
 from app.main import app

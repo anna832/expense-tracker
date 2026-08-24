@@ -11,6 +11,7 @@ app.include_router(categories.router)
 app.include_router(expenses.router)
 app.include_router(reports.router)
 
+
 @app.get("/api/v1/health/")
 def health():
     return {
