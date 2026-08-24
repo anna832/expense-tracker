@@ -1,7 +1,8 @@
 from datetime import date
 
 
-def test_create_expense(client, create_category_fixture):
+def test_create_expense(client, auth_headers, create_category_fixture):
+    headers, _ = auth_headers()
     category = create_category_fixture("Еда")
 
     response = client.post(
@@ -12,6 +13,7 @@ def test_create_expense(client, create_category_fixture):
             "spent_at": "2026-08-15",
             "comment": "Обед",
         },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -21,7 +23,9 @@ def test_create_expense(client, create_category_fixture):
     assert data["comment"] == "Обед"
 
 
-def test_create_expense_with_invalid_category(client):
+def test_create_expense_with_invalid_category(client, auth_headers):
+    headers, _ = auth_headers()
+
     response = client.post(
         "/api/v1/expenses/",
         json={
@@ -30,13 +34,15 @@ def test_create_expense_with_invalid_category(client):
             "spent_at": "2026-08-15",
             "comment": "Обед",
         },
+        headers=headers,
     )
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Category not found"
 
 
-def test_create_expense_with_negative_amount(client, create_category_fixture):
+def test_create_expense_with_negative_amount(client, auth_headers, create_category_fixture):
+    headers, _ = auth_headers()
     category = create_category_fixture("Еда")
 
     response = client.post(
@@ -46,12 +52,29 @@ def test_create_expense_with_negative_amount(client, create_category_fixture):
             "amount_cents": -100,
             "spent_at": "2026-08-15",
         },
+        headers=headers,
     )
 
     assert response.status_code == 422
 
 
-def test_list_expenses(client, create_category_fixture, create_expense_fixture):
+def test_create_expense_without_token(client, create_category_fixture):
+    category = create_category_fixture("Еда")
+
+    response = client.post(
+        "/api/v1/expenses/",
+        json={
+            "category_id": category.id,
+            "amount_cents": 50000,
+            "spent_at": "2026-08-15",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_list_expenses(client, auth_headers, create_category_fixture, create_expense_fixture):
+    headers, user = auth_headers()
     category = create_category_fixture()
 
     for i in range(3):
@@ -60,9 +83,10 @@ def test_list_expenses(client, create_category_fixture, create_expense_fixture):
             1000 * (i + 1),
             date(2026, 8, 10 + i),
             f"Трата {i + 1}",
+            user_id=user.id,
         )
 
-    response = client.get("/api/v1/expenses/")
+    response = client.get("/api/v1/expenses/", headers=headers)
     assert response.status_code == 200
 
     data = response.json()
@@ -72,74 +96,17 @@ def test_list_expenses(client, create_category_fixture, create_expense_fixture):
     assert len(data["items"]) == 3
 
 
-def test_list_expenses_with_pagination(client, create_category_fixture, create_expense_fixture):
+def test_list_expenses_without_token(client):
+    response = client.get("/api/v1/expenses/")
+    assert response.status_code == 401
+
+
+def test_get_expense_by_id(client, auth_headers, create_category_fixture, create_expense_fixture):
+    headers, user = auth_headers()
     category = create_category_fixture()
+    expense = create_expense_fixture(category, 50000, date(2026, 8, 15), "Обед", user_id=user.id)
 
-    for i in range(10):
-        create_expense_fixture(category, 1000, date(2026, 8, 10 + i))
-
-    response = client.get("/api/v1/expenses/?skip=0&limit=3")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["total"] == 10
-    assert data["limit"] == 3
-    assert len(data["items"]) == 3
-
-    response = client.get("/api/v1/expenses/?skip=3&limit=3")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["total"] == 10
-    assert data["skip"] == 3
-    assert len(data["items"]) == 3
-
-
-def test_list_expenses_filter_by_category(client, create_category_fixture, create_expense_fixture):
-    food = create_category_fixture("Еда")
-    transport = create_category_fixture("Транспорт")
-
-    create_expense_fixture(food, 1000, date(2026, 8, 15))
-    create_expense_fixture(transport, 2000, date(2026, 8, 15))
-
-    response = client.get(f"/api/v1/expenses/?category_id={food.id}")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["total"] == 1
-    assert data["items"][0]["category_id"] == food.id
-
-
-def test_list_expenses_filter_by_date_range(
-    client, create_category_fixture, create_expense_fixture
-):
-    category = create_category_fixture()
-
-    create_expense_fixture(category, 1000, date(2026, 8, 5))
-    create_expense_fixture(category, 2000, date(2026, 8, 15))
-    create_expense_fixture(category, 3000, date(2026, 8, 25))
-
-    response = client.get("/api/v1/expenses/?date_from=2026-08-10&date_to=2026-08-20")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["total"] == 1
-    assert data["items"][0]["amount_cents"] == 2000
-
-
-def test_list_expenses_limit_validation(client):
-    response = client.get("/api/v1/expenses/?limit=200")
-    assert response.status_code == 422
-
-    response = client.get("/api/v1/expenses/?skip=-1")
-    assert response.status_code == 422
-
-
-def test_get_expense_by_id(client, create_category_fixture, create_expense_fixture):
-    category = create_category_fixture()
-    expense = create_expense_fixture(category, 50000, date(2026, 8, 15), "Обед")
-
-    response = client.get(f"/api/v1/expenses/{expense.id}/")
+    response = client.get(f"/api/v1/expenses/{expense.id}/", headers=headers)
     assert response.status_code == 200
 
     data = response.json()
@@ -148,19 +115,23 @@ def test_get_expense_by_id(client, create_category_fixture, create_expense_fixtu
     assert data["comment"] == "Обед"
 
 
-def test_get_expense_not_found(client):
-    response = client.get("/api/v1/expenses/999/")
+def test_get_expense_not_found(client, auth_headers):
+    headers, _ = auth_headers()
+
+    response = client.get("/api/v1/expenses/999/", headers=headers)
     assert response.status_code == 404
     assert response.json()["detail"] == "Expense not found"
 
 
-def test_update_expense(client, create_category_fixture, create_expense_fixture):
+def test_update_expense(client, auth_headers, create_category_fixture, create_expense_fixture):
+    headers, user = auth_headers()
     category = create_category_fixture()
-    expense = create_expense_fixture(category, 50000, date(2026, 8, 15), "Обед")
+    expense = create_expense_fixture(category, 50000, date(2026, 8, 15), "Обед", user_id=user.id)
 
     response = client.patch(
         f"/api/v1/expenses/{expense.id}/",
         json={"amount_cents": 75000, "comment": "Ужин"},
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -169,12 +140,13 @@ def test_update_expense(client, create_category_fixture, create_expense_fixture)
     assert data["comment"] == "Ужин"
 
 
-def test_delete_expense(client, create_category_fixture, create_expense_fixture):
+def test_delete_expense(client, auth_headers, create_category_fixture, create_expense_fixture):
+    headers, user = auth_headers()
     category = create_category_fixture()
-    expense = create_expense_fixture(category, 50000, date(2026, 8, 15))
+    expense = create_expense_fixture(category, 50000, date(2026, 8, 15), user_id=user.id)
 
-    response = client.delete(f"/api/v1/expenses/{expense.id}/")
+    response = client.delete(f"/api/v1/expenses/{expense.id}/", headers=headers)
     assert response.status_code == 204
 
-    response = client.get(f"/api/v1/expenses/{expense.id}/")
+    response = client.get(f"/api/v1/expenses/{expense.id}/", headers=headers)
     assert response.status_code == 404

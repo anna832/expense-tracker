@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -5,26 +6,29 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     class Meta:
-        ordering = ["name"]
-        verbose_name_plural = "Categories"
+        db_table = "core_category"
 
     def __str__(self):
         return self.name
 
 
 class Expense(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="expenses",
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
         related_name="expenses",
     )
-    amount_cents = models.PositiveIntegerField()
+    amount_cents = models.IntegerField()
     spent_at = models.DateField()
-    comment = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    comment = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
-        ordering = ["-spent_at", "-id"]
+        db_table = "core_expense"
 
     def __str__(self):
-        return f"{self.category.name} - {self.amount_cents} - {self.spent_at}"
+        return f"{self.category} — {self.amount_cents}"

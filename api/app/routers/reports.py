@@ -6,12 +6,14 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
-from app.models import Category, Expense
+from app.models import Category, Expense, User
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 YearParam = Annotated[int, Query(..., ge=2000, le=2100, description="Год отчёта")]
 MonthParam = Annotated[int, Query(..., ge=1, le=12, description="Месяц отчёта")]
@@ -26,6 +28,7 @@ def get_month_range(year: int, month: int) -> tuple[date, date]:
 @router.get("/monthly/")
 def monthly_report(
     db: DbSession,
+    current_user: CurrentUser,
     year: YearParam,
     month: MonthParam,
 ):
@@ -34,6 +37,7 @@ def monthly_report(
     total_cents = db.execute(
         select(func.coalesce(func.sum(Expense.amount_cents), 0)).where(
             and_(
+                Expense.user_id == current_user.id,
                 Expense.spent_at >= first_day,
                 Expense.spent_at <= last_day,
             )
@@ -50,6 +54,7 @@ def monthly_report(
 @router.get("/by-categories/")
 def by_categories_report(
     db: DbSession,
+    current_user: CurrentUser,
     year: YearParam,
     month: MonthParam,
 ):
@@ -64,6 +69,7 @@ def by_categories_report(
             Expense,
             and_(
                 Category.id == Expense.category_id,
+                Expense.user_id == current_user.id,
                 Expense.spent_at >= first_day,
                 Expense.spent_at <= last_day,
             ),

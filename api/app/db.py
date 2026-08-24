@@ -1,10 +1,14 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import get_settings
 
 _engine = None
 _SessionLocal = None
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 def get_engine():

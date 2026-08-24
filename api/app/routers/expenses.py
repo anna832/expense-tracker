@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
-from app.models import Category, Expense
+from app.models import Category, Expense, User
 from app.schemas import (
     ExpenseCreate,
     ExpenseRead,
@@ -17,6 +18,7 @@ from app.schemas import (
 router = APIRouter(prefix="/api/v1/expenses", tags=["expenses"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 SkipParam = Annotated[int, Query(ge=0, description="Сколько записей пропустить")]
 LimitParam = Annotated[int, Query(ge=1, le=100, description="Сколько записей вернуть")]
@@ -26,12 +28,13 @@ DateToParam = Annotated[date | None, Query(description="Фильтр: не по�
 
 
 @router.post("/", response_model=ExpenseRead, status_code=201)
-def create_expense(data: ExpenseCreate, db: DbSession):
+def create_expense(data: ExpenseCreate, db: DbSession, current_user: CurrentUser):
     category = db.get(Category, data.category_id)
     if category is None:
         raise HTTPException(status_code=400, detail="Category not found")
 
     expense = Expense(
+        user_id=current_user.id,
         category_id=data.category_id,
         amount_cents=data.amount_cents,
         spent_at=data.spent_at,
@@ -46,13 +49,14 @@ def create_expense(data: ExpenseCreate, db: DbSession):
 @router.get("/", response_model=PaginatedExpenses)
 def list_expenses(
     db: DbSession,
+    current_user: CurrentUser,
     skip: SkipParam = 0,
     limit: LimitParam = 50,
     category_id: CategoryFilterParam = None,
     date_from: DateFromParam = None,
     date_to: DateToParam = None,
 ):
-    conditions = []
+    conditions = [Expense.user_id == current_user.id]
     if category_id is not None:
         conditions.append(Expense.category_id == category_id)
     if date_from is not None:
@@ -60,9 +64,7 @@ def list_expenses(
     if date_to is not None:
         conditions.append(Expense.spent_at <= date_to)
 
-    base_query = select(Expense)
-    if conditions:
-        base_query = base_query.where(and_(*conditions))
+    base_query = select(Expense).where(and_(*conditions))
 
     total = db.execute(select(func.count()).select_from(base_query.subquery())).scalar_one()
 
@@ -85,17 +87,17 @@ def list_expenses(
 
 
 @router.get("/{expense_id}/", response_model=ExpenseRead)
-def get_expense(expense_id: int, db: DbSession):
+def get_expense(expense_id: int, db: DbSession, current_user: CurrentUser):
     expense = db.get(Expense, expense_id)
-    if expense is None:
+    if expense is None or expense.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Expense not found")
     return expense
 
 
 @router.patch("/{expense_id}/", response_model=ExpenseRead)
-def update_expense(expense_id: int, data: ExpenseUpdate, db: DbSession):
+def update_expense(expense_id: int, data: ExpenseUpdate, db: DbSession, current_user: CurrentUser):
     expense = db.get(Expense, expense_id)
-    if expense is None:
+    if expense is None or expense.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Expense not found")
 
     update_data = data.model_dump(exclude_unset=True)
@@ -108,9 +110,9 @@ def update_expense(expense_id: int, data: ExpenseUpdate, db: DbSession):
 
 
 @router.delete("/{expense_id}/", status_code=204)
-def delete_expense(expense_id: int, db: DbSession):
+def delete_expense(expense_id: int, db: DbSession, current_user: CurrentUser):
     expense = db.get(Expense, expense_id)
-    if expense is None:
+    if expense is None or expense.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Expense not found")
 
     db.delete(expense)
