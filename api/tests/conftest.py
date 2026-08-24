@@ -5,13 +5,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
+from app.db import get_db
+from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from testcontainers.postgres import PostgresContainer
-
-from app.db import get_db
-from app.main import app
 
 DJANGO_PROJECT_DIR = Path(__file__).resolve().parent.parent.parent / "django_admin"
 

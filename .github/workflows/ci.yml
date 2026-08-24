@@ -27,7 +27,26 @@ jobs:
       - name: Run ruff format check
         run: ruff format --check .
 
-  test:
+  test-django:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r django_admin/requirements.txt
+
+      - name: Run Django tests
+        run: |
+          cd django_admin
+          python manage.py test --settings=project.settings_test
+
+  test-fastapi:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -43,7 +62,7 @@ jobs:
           pip install -r api/requirements.txt
           pip install -r api/requirements-dev.txt
 
-      - name: Run tests
+      - name: Run FastAPI tests
         run: |
           cd api
           pytest
