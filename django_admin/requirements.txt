@@ -1,2 +1,4 @@
 django==6.1
 psycopg[binary]==3.3.4
+gunicorn==26.1.0
+whitenoise==6.12.0
