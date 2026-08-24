@@ -39,3 +39,6 @@ htmlcov/
 
 # Linters
 .ruff_cache/
+
+# Static files
+staticfiles/
