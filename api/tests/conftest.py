@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import pytest
 from app.db import get_db
 from app.main import app
+from app.models import Category, Expense
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -90,3 +91,32 @@ def clean_tables(db_session):
     for table in reversed(Base.metadata.sorted_tables):
         db_session.execute(table.delete())
     db_session.commit()
+
+
+@pytest.fixture
+def create_category_fixture(db_session):
+    def _create(name="Еда"):
+        category = Category(name=name)
+        db_session.add(category)
+        db_session.commit()
+        db_session.refresh(category)
+        return category
+
+    return _create
+
+
+@pytest.fixture
+def create_expense_fixture(db_session):
+    def _create(category, amount_cents, spent_at, comment=""):
+        expense = Expense(
+            category_id=category.id,
+            amount_cents=amount_cents,
+            spent_at=spent_at,
+            comment=comment,
+        )
+        db_session.add(expense)
+        db_session.commit()
+        db_session.refresh(expense)
+        return expense
+
+    return _create

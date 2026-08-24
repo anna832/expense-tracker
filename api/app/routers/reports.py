@@ -13,6 +13,9 @@ router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
 DbSession = Annotated[Session, Depends(get_db)]
 
+YearParam = Annotated[int, Query(..., ge=2000, le=2100, description="Год отчёта")]
+MonthParam = Annotated[int, Query(..., ge=1, le=12, description="Месяц отчёта")]
+
 
 def get_month_range(year: int, month: int) -> tuple[date, date]:
     first_day = date(year, month, 1)
@@ -23,8 +26,8 @@ def get_month_range(year: int, month: int) -> tuple[date, date]:
 @router.get("/monthly/")
 def monthly_report(
     db: DbSession,
-    year: int = Query(..., ge=2000, le=2100, description="Год отчёта"),
-    month: int = Query(..., ge=1, le=12, description="Месяц отчёта"),
+    year: YearParam,
+    month: MonthParam,
 ):
     first_day, last_day = get_month_range(year, month)
 
@@ -47,8 +50,8 @@ def monthly_report(
 @router.get("/by-categories/")
 def by_categories_report(
     db: DbSession,
-    year: int = Query(..., ge=2000, le=2100, description="Год отчёта"),
-    month: int = Query(..., ge=1, le=12, description="Месяц отчёта"),
+    year: YearParam,
+    month: MonthParam,
 ):
     first_day, last_day = get_month_range(year, month)
 

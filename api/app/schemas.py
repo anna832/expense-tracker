@@ -33,3 +33,10 @@ class ExpenseRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedExpenses(BaseModel):
+    items: list[ExpenseRead]
+    total: int
+    skip: int
+    limit: int
