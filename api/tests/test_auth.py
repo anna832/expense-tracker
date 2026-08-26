@@ -105,6 +105,32 @@ def test_login_short_password_returns_401(client, engine):
     assert response.status_code == 401
 
 
+def test_register_password_too_long_returns_422(client):
+    long_password = "a" * 129
+    response = client.post(
+        "/api/v1/auth/register/",
+        json={"username": "testuser", "password": long_password},
+    )
+    assert response.status_code == 422
+
+
+def test_register_password_exactly_128_chars_ok(client):
+    boundary_password = "a" * 128
+    response = client.post(
+        "/api/v1/auth/register/",
+        json={"username": "testuser", "password": boundary_password},
+    )
+    assert response.status_code == 201
+
+
+def test_register_password_exactly_8_chars_ok(client):
+    response = client.post(
+        "/api/v1/auth/register/",
+        json={"username": "testuser", "password": "validpass"},
+    )
+    assert response.status_code == 201
+
+
 def test_register_long_comment_in_expense(client, auth_headers, create_category_fixture):
     headers, _ = auth_headers()
     category = create_category_fixture("Еда")

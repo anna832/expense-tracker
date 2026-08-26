@@ -39,6 +39,7 @@ def apply_django_migrations(database_url, postgres_container):
     parsed = urlparse(postgres_container.get_connection_url())
 
     env = os.environ.copy()
+    env["DJANGO_SETTINGS_MODULE"] = "project.settings_test"
     env["POSTGRES_HOST"] = parsed.hostname
     env["POSTGRES_PORT"] = str(parsed.port)
     env["POSTGRES_DB"] = parsed.path.lstrip("/")

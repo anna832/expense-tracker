@@ -72,3 +72,10 @@ Django-миграции, так что API тестируется на той ж
 | GET | `/api/v1/reports/monthly/` | Сумма расходов за месяц |
 | GET | `/api/v1/reports/by-categories/` | Разбивка по категориям |
 | GET | `/health/` | Проверка работоспособности |
+
+Все эндпоинты, кроме `/health/` и `/api/v1/auth/`, требуют JWT-токен.
+Получить его — `POST /api/v1/auth/login/`, дальше передавать в заголовке:
+
+    Authorization: Bearer <token>
+
+В Swagger (`/docs`) для этого есть кнопка **Authorize** вверху страницы.

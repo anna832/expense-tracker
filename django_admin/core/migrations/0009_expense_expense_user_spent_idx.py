@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0008_auto_20260826_2018"),
+        ("core", "0008_auth_user_date_joined_default"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
