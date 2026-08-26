@@ -20,6 +20,12 @@ def assert_schema_matches(engine, table_name: str, model) -> None:
         model_type = normalize_type(str(column.type))
         assert db_type == model_type, f"{column.name}: в базе {db_type}, в модели {model_type}"
 
+        db_nullable = columns[column.name]["nullable"]
+        model_nullable = column.nullable
+        assert db_nullable == model_nullable, (
+            f"{column.name}: в базе nullable={db_nullable}, в модели nullable={model_nullable}"
+        )
+
 
 def test_expense_schema_matches_real_db(engine):
     assert_schema_matches(engine, "core_expense", Expense)
