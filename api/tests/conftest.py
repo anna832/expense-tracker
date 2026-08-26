@@ -1,7 +1,7 @@
 import os
 
 os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost/test")
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-tests")
+os.environ.setdefault("JWT_SECRET_KEY", "test_secret_key_for_testing_only_32chars")
 
 import subprocess
 import sys
@@ -16,7 +16,7 @@ from app.models import User
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
 
 DJANGO_PROJECT_DIR = Path(__file__).resolve().parent.parent.parent / "django_admin"
 
