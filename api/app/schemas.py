@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +31,7 @@ class ExpenseRead(BaseModel):
     amount_cents: int
     spent_at: date
     comment: str
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

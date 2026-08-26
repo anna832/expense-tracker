@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Now
 
 
 class Category(models.Model):
@@ -26,6 +27,7 @@ class Expense(models.Model):
     amount_cents = models.PositiveIntegerField()
     spent_at = models.DateField()
     comment = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
 
     class Meta:
         db_table = "core_expense"
