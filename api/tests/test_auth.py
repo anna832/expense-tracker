@@ -94,6 +94,17 @@ def test_register_short_password(client):
     assert response.status_code == 422
 
 
+def test_login_short_password_returns_401(client, engine):
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": "maria",
+            "password": "123",
+        },
+    )
+    assert response.status_code == 401
+
+
 def test_register_long_comment_in_expense(client, auth_headers, create_category_fixture):
     headers, _ = auth_headers()
     category = create_category_fixture("Еда")

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.db import get_db
 from app.models import User
-from app.schemas import TokenResponse, UserCreate, UserRead
+from app.schemas import TokenResponse, UserCreate, UserLogin, UserRead
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -31,10 +32,13 @@ def register(data: UserCreate, db: DbSession):
 
 
 @router.post("/login/", response_model=TokenResponse)
-def login(data: UserCreate, db: DbSession):
+def login(data: UserLogin, db: DbSession):
     user = db.execute(select(User).where(User.username == data.username)).scalar_one_or_none()
     if user is None or not verify_password(data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
 
     token = create_access_token(user.id)
     return TokenResponse(access_token=token, token_type="bearer")

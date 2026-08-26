@@ -16,3 +16,4 @@ class ExpenseAdmin(admin.ModelAdmin):
     list_display: ClassVar[list[str]] = ["id", "category", "amount_cents", "spent_at"]
     search_fields: ClassVar[list[str]] = ["comment"]
     list_filter: ClassVar[list[str]] = ["category", "spent_at"]
+    list_select_related: ClassVar[list[str]] = ["category", "user"]

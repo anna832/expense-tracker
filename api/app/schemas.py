@@ -48,6 +48,11 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, max_length=72, description="Пароль")
 
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
 class UserRead(BaseModel):
     id: int
     username: str
