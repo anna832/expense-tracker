@@ -33,6 +33,12 @@ class Expense(models.Model):
     class Meta:
         db_table = "core_expense"
         ordering = ["-spent_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_cents__gt=0),
+                name="core_expense_amount_positive",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.category} — {self.amount_cents}"
