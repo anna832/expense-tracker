@@ -94,9 +94,9 @@ def test_register_short_password(client):
     assert response.status_code == 422
 
 
-def test_login_short_password_returns_401(client, engine):
+def test_login_short_password_returns_401(client):
     response = client.post(
-        "/api/v1/auth/login",
+        "/api/v1/auth/login/",
         json={
             "username": "maria",
             "password": "123",
