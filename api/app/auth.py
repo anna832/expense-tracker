@@ -1,3 +1,5 @@
+import binascii
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -18,11 +20,15 @@ DbSession = Annotated[Session, Depends(get_db)]
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    digest = binascii.hexlify(hashlib.sha256(password.encode()).digest())
+    return "bcrypt_sha256$" + bcrypt.hashpw(digest, bcrypt.gensalt()).decode()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+    if not hashed_password.startswith("bcrypt_sha256$"):
+        return False
+    digest = binascii.hexlify(hashlib.sha256(plain_password.encode()).digest())
+    return bcrypt.checkpw(digest, hashed_password.split("$", 1)[1].encode())
 
 
 def create_access_token(user_id: int) -> str:

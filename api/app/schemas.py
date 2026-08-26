@@ -44,7 +44,7 @@ class PaginatedExpenses(BaseModel):
 
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=150, description="Имя пользователя")
-    password: str = Field(min_length=8, max_length=128, description="Пароль")
+    password: str = Field(min_length=8, max_length=72, description="Пароль")
 
 
 class UserRead(BaseModel):
