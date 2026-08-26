@@ -33,6 +33,9 @@ class Expense(models.Model):
     class Meta:
         db_table = "core_expense"
         ordering = ["-spent_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "spent_at"], name="expense_user_spent_idx"),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(amount_cents__gt=0),
