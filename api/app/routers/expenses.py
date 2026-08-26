@@ -101,6 +101,11 @@ def update_expense(expense_id: int, data: ExpenseUpdate, db: DbSession, current_
         raise HTTPException(status_code=404, detail="Expense not found")
 
     update_data = data.model_dump(exclude_unset=True)
+
+    if "category_id" in update_data:
+        if db.get(Category, update_data["category_id"]) is None:
+            raise HTTPException(status_code=400, detail="Category not found")
+
     for key, value in update_data.items():
         setattr(expense, key, value)
 

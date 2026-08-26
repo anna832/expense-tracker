@@ -23,7 +23,7 @@ class Expense(models.Model):
         on_delete=models.PROTECT,
         related_name="expenses",
     )
-    amount_cents = models.IntegerField()
+    amount_cents = models.PositiveIntegerField()
     spent_at = models.DateField()
     comment = models.CharField(max_length=255, blank=True, default="")
 

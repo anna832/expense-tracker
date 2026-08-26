@@ -73,4 +73,6 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="User is inactive")
     return user
