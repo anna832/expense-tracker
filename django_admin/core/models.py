@@ -8,6 +8,7 @@ class Category(models.Model):
 
     class Meta:
         db_table = "core_category"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -31,6 +32,7 @@ class Expense(models.Model):
 
     class Meta:
         db_table = "core_expense"
+        ordering = ["-spent_at", "-id"]
 
     def __str__(self):
         return f"{self.category} — {self.amount_cents}"
